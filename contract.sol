@@ -1,65 +1,75 @@
 pragma solidity ^0.4.19;
 
-contract Test 
+contract TicTacToe
 {
+    // Condicion impuesta por mi 
+    // Solamente 1 juego a la vez
+    
     struct Game {
+        string name;
         address[9] board;
         address[2] player;
         uint turn;
         uint amount;
-        bool open;
+        bool waiting;
+        bool finish;
     }
-
-    mapping(string => Game ) game;
-    string[] game_list;
+    Game room;
     
-    modifier notExistGame(string _id) 
+    function TicTacToe() public
     {
-        require ();
-        _;
-    }
-
-    function newGame(string _id) notExistGame(_id) payable public returns(bool)
-    {
-        keys.push(_id);
-        game[_id].player[0] = msg.sender;
-        game[_id].turn      = 0;
-        game[_id].amount    = msg.value;
-        game[_id].open      = true;
+        room.finish = true;
     }
     
-    function getBoard(string _id) public constant returns(address[9])
-    {
-        return game[_id].board;
-    }
     
-    function getTurn(string _id) public constant returns(address)
+    modifier waiting()
     {
-        return game[_id].player[game[_id].turn];
-    }
-    
-    modifier gameOpen(string _id)
-    {
-        require (game[_id].open == true);
+        require(room.waiting == true);
         _;
     }
     
-    modifier notStartedGame(string _id)
+    modifier otherPlayer()
     {
-        require (game[_id].player[1] == 0 && game[_id].player[0] != msg.sender);
+        require(room.player[0] != msg.sender);
         _;
     }
     
-    function join(string _id) notStartedGame(_id) public returns(bool)
+    modifier checkBid()
     {
-        game[_id].player[1] = msg.sender;
-        game[_id].open      = false;
-        return true;
+        require(room.amount <= msg.value);
+        _;
     }
     
-    function checkBoard(string _id, uint c) internal returns (bool)
+    modifier myTurn()
     {
-        address[9] memory board = game[_id].board;
+        require(room.player[room.turn] == msg.sender);
+        _;
+    
+    }
+    
+    modifier playable(uint c)
+    {
+        require(room.board[c] == 0);
+        _;
+    }
+    
+    modifier notOpen()
+    {
+        require(room.finish == true);
+        _;
+    }
+    
+    function nextTurn() internal
+    {
+        if (room.turn == 0) 
+            room.turn = 1;
+        else 
+            room.turn = 0;
+    }
+    
+    function checkBoard(uint c) constant internal returns (bool)
+    {
+        address[9] memory board = room.board;
         if (c == 0) 
         {
             if ((board[0] == board[4]  && board[0] == board[8]) ||
@@ -149,35 +159,45 @@ contract Test
             return true;
         }
     }
-    
-    modifier playable(string _id, uint c)
+    function getBoard() constant public returns(address[9])
     {
-        require(game[_id].board[c] == 0);
-        _;
+        return room.board;
+    }
+    function getTurn() constant public returns(address)
+    {
+        if (room.waiting == true)
+        {
+            return address(0);
+        }
+        return room.player[room.turn];
+    }
+    function newGame(string room_name) notOpen() public payable
+    {
+        room.name       = room_name;
+        room.player[0]  = msg.sender;
+        room.turn       = 0;
+        room.amount     = msg.value;
+        room.waiting    = true;
+        room.finish     = false;
     }
     
-    modifier valid_turn(string _id)
+    function joinGame() public payable waiting() otherPlayer() checkBid() returns(bool)
     {
-        require(game[_id].player[game[_id].turn] == msg.sender);
-        _;
-        
+        if (msg.value > room.amount)
+            msg.sender.transfer(msg.value-room.amount);
+        room.amount    = this.balance;
+        room.player[1] = msg.sender;
+        room.waiting   = false;
     }
     
-    function nextTurn(string _id) internal
+    function play(uint c) public playable(c) myTurn() 
     {
-        if (game[_id].turn == 0) 
-            game[_id].turn = 1;
-        else 
-            game[_id].turn = 0;
+        room.board[c] = msg.sender;
+        if (checkBoard(c)) {
+            room.finish = true;
+            msg.sender.transfer(room.amount);
+        }
+        else
+            nextTurn();
     }
-    
-//    function play(uint c, string _id) valid_turn(_id) playable public returns(bool)
- //   {
-        //bool w;
-        //board[c] = msg.sender;
-        //w = checkBoard(c);
-        //if (!w) {
-        //   nextTurn();            
-        //}
-  //  }
 }
