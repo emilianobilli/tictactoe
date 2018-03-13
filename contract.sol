@@ -9,12 +9,13 @@ contract TicTacToe
         string name;
         address[9] board;
         address[2] player;
+        uint movs;
         uint turn;
         uint amount;
         bool waiting;
         bool finish;
     }
-    Game room;
+    Game public room;
     
     function TicTacToe() public
     {
@@ -25,6 +26,12 @@ contract TicTacToe
     modifier waiting()
     {
         require(room.waiting == true);
+        _;
+    }
+
+    modifier notWaiting()
+    {
+        require(room.waiting == false);
         _;
     }
     
@@ -44,7 +51,6 @@ contract TicTacToe
     {
         require(room.player[room.turn] == msg.sender);
         _;
-    
     }
     
     modifier playable(uint c)
@@ -59,6 +65,12 @@ contract TicTacToe
         _;
     }
     
+    modifier open()
+    {
+        require(room.finish == false);
+        _;
+    }
+
     function nextTurn() internal
     {
         if (room.turn == 0) 
@@ -67,6 +79,21 @@ contract TicTacToe
             room.turn = 0;
     }
     
+    function getPlayers() constant public returns(address[2])
+    {
+        return room.player;
+    }
+
+    function getFinish() constant public returns(bool)
+    {
+        return room.finish;
+    }
+
+    function getRoomName() constant public returns(string)
+    {
+        return room.name;
+    }
+
     function checkBoard(uint c) constant internal returns (bool)
     {
         address[9] memory board = room.board;
@@ -148,37 +175,76 @@ contract TicTacToe
         }
         else if (c == 6)
         {
-            return true;
+            if ((board[6] == board[0] && board[6] == board[3]) ||
+                (board[6] == board[7] && board[6] == board[8]) ||
+                (board[6] == board[4] && board[6] == board[2]))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
         else if (c == 7)
         {
-            return true;
+            if ((board[7] == board[6] && board[7] == board[8]) ||
+                (board[7] == board[4] && board[7] == board[1]))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
         else if (c == 8)
         {
-            return true;
+            if ((board[8] == board[6] && board[8] == board[7]) ||
+                (board[8] == board[2] && board[8] == board[5]) ||
+                (board[8] == board[0] && board[8] == board[4]))
+            {
+                return true;
+            }
+            else 
+            {
+                return false;
+            }
         }
     }
+    function getBid() constant public returns(uint)
+    {
+        return room.amount;
+    }
+
     function getBoard() constant public returns(address[9])
     {
+        address[9] memory board;
+        if (room.waiting == true || room.finish == true)
+        {
+            return board;
+        }
         return room.board;
     }
     function getTurn() constant public returns(address)
     {
-        if (room.waiting == true)
+        if (room.waiting == true || room.finish == true)
         {
             return address(0);
         }
         return room.player[room.turn];
     }
+
     function newGame(string room_name) notOpen() public payable
     {
+        room.board      = [address(0),address(0),address(0),address(0),address(0),address(0),address(0),address(0),address(0)];
         room.name       = room_name;
         room.player[0]  = msg.sender;
         room.turn       = 0;
         room.amount     = msg.value;
         room.waiting    = true;
         room.finish     = false;
+        room.movs       = 9;
     }
     
     function joinGame() public payable waiting() otherPlayer() checkBid() returns(bool)
@@ -190,14 +256,24 @@ contract TicTacToe
         room.waiting   = false;
     }
     
-    function play(uint c) public playable(c) myTurn() 
+    function play(uint c) public open() playable(c) myTurn() 
     {
         room.board[c] = msg.sender;
+        room.movs     = room.movs -1;
+
         if (checkBoard(c)) {
             room.finish = true;
             msg.sender.transfer(room.amount);
         }
-        else
-            nextTurn();
+        else {
+            if (room.movs == 0) {
+                room.finish = true;
+                room.player[0].transfer(room.amount/2);
+                room.player[1].transfer(room.amount/2);
+            }
+            else {
+                nextTurn();
+            }
+        }
     }
 }
