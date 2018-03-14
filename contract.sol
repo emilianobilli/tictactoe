@@ -79,22 +79,34 @@ contract TicTacToe
             room.turn = 0;
     }
     
-    function getPlayers() constant public returns(address[2])
+    function getPlayers() 
+        constant 
+        public 
+        returns(address[2])
     {
         return room.player;
     }
 
-    function getFinish() constant public returns(bool)
+    function roomFree() 
+        constant 
+        public 
+        returns(bool)
     {
         return room.finish;
     }
 
-    function getRoomName() constant public returns(string)
+    function getRoomName() 
+        constant 
+        public 
+        returns(string)
     {
         return room.name;
     }
 
-    function checkBoard(uint c) constant internal returns (bool)
+    function checkBoard(uint c) 
+        constant 
+        internal 
+        returns (bool)
     {
         address[9] memory board = room.board;
         if (c == 0) 
@@ -212,12 +224,18 @@ contract TicTacToe
             }
         }
     }
-    function getBid() constant public returns(uint)
+    function getBid() 
+        constant 
+        public 
+        returns(uint)
     {
         return room.amount;
     }
 
-    function getBoard() constant public returns(address[9])
+    function getBoard() 
+        constant 
+        public 
+        returns(address[9])
     {
         address[9] memory board;
         if (room.waiting == true || room.finish == true)
@@ -226,7 +244,10 @@ contract TicTacToe
         }
         return room.board;
     }
-    function getTurn() constant public returns(address)
+    function getTurn() c
+        constant 
+        public 
+        returns(address)
     {
         if (room.waiting == true || room.finish == true)
         {
@@ -235,7 +256,10 @@ contract TicTacToe
         return room.player[room.turn];
     }
 
-    function newGame(string room_name) notOpen() public payable
+    function newGame(string room_name) 
+        notOpen() 
+        public 
+        payable
     {
         room.board      = [address(0),address(0),address(0),address(0),address(0),address(0),address(0),address(0),address(0)];
         room.name       = room_name;
@@ -247,7 +271,13 @@ contract TicTacToe
         room.movs       = 9;
     }
     
-    function joinGame() public payable waiting() otherPlayer() checkBid() returns(bool)
+    function joinGame() 
+        public 
+        payable 
+        waiting() 
+        otherPlayer() 
+        checkBid() 
+        returns(bool)
     {
         if (msg.value > room.amount)
             msg.sender.transfer(msg.value-room.amount);
@@ -256,7 +286,11 @@ contract TicTacToe
         room.waiting   = false;
     }
     
-    function play(uint c) public open() playable(c) myTurn() 
+    function play(uint c) 
+        public 
+        open() 
+        playable(c) 
+        myTurn() 
     {
         room.board[c] = msg.sender;
         room.movs     = room.movs -1;
