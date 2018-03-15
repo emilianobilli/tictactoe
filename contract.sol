@@ -70,6 +70,11 @@ contract TicTacToe
         require(room.finish == false);
         _;
     }
+    
+    event TurnChange(address _t);
+    event PlayerJoin(address _t);
+    event NewGame(string _name, uint256 _amount);
+    event EndGame(address _winner, uint256 _amount);
 
     function nextTurn() internal
     {
@@ -77,6 +82,8 @@ contract TicTacToe
             room.turn = 1;
         else 
             room.turn = 0;
+        
+        TurnChange(room.player[room.turn]);
     }
     
     function getPlayers() 
@@ -244,7 +251,8 @@ contract TicTacToe
         }
         return room.board;
     }
-    function getTurn() c
+
+    function getTurn()
         constant 
         public 
         returns(address)
@@ -269,6 +277,7 @@ contract TicTacToe
         room.waiting    = true;
         room.finish     = false;
         room.movs       = 9;
+        NewGame(room.name,msg.value);
     }
     
     function joinGame() 
@@ -284,6 +293,7 @@ contract TicTacToe
         room.amount    = this.balance;
         room.player[1] = msg.sender;
         room.waiting   = false;
+        PlayerJoin(msg.sender);
     }
     
     function play(uint c) 
@@ -298,12 +308,14 @@ contract TicTacToe
         if (checkBoard(c)) {
             room.finish = true;
             msg.sender.transfer(room.amount);
+            EndGame(msg.sender,room.amount);
         }
         else {
             if (room.movs == 0) {
                 room.finish = true;
                 room.player[0].transfer(room.amount/2);
                 room.player[1].transfer(room.amount/2);
+                EndGame(address(0),0);
             }
             else {
                 nextTurn();
