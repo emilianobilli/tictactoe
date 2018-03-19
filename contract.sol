@@ -76,6 +76,7 @@ contract TicTacToe
     event NewGame(string _name, uint256 _amount);
     event EndGame(address _winner, uint256 _amount);
 
+
     function nextTurn() internal
     {
         if (room.turn == 0) 
@@ -280,13 +281,20 @@ contract TicTacToe
         NewGame(room.name,msg.value);
     }
     
+    function isWaiting() 
+        constant
+        public
+        returns(bool)
+    {
+        return room.waiting;
+    }
+
     function joinGame() 
         public 
         payable 
         waiting() 
         otherPlayer() 
         checkBid() 
-        returns(bool)
     {
         if (msg.value > room.amount)
             msg.sender.transfer(msg.value-room.amount);
