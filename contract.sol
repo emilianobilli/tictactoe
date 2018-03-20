@@ -7,8 +7,9 @@ contract TicTacToe
     
     struct Game {
         string name;
-        address[9] board;
-        address[2] player;
+        address[9]     board;
+        address[2]     player;
+        blocked_until  block_number;
         uint movs;
         uint turn;
         uint amount;
@@ -71,6 +72,12 @@ contract TicTacToe
         _;
     }
     
+    modifier canReclaim()
+    {
+        require(room.blocked_until >= block.number);
+        _;
+    }
+
     event TurnChange(address _t);
     event PlayerJoin(address _t);
     event NewGame(string _name, uint256 _amount);
@@ -270,14 +277,15 @@ contract TicTacToe
         public 
         payable
     {
-        room.board      = [address(0),address(0),address(0),address(0),address(0),address(0),address(0),address(0),address(0)];
-        room.name       = room_name;
-        room.player[0]  = msg.sender;
-        room.turn       = 0;
-        room.amount     = msg.value;
-        room.waiting    = true;
-        room.finish     = false;
-        room.movs       = 9;
+        room.board        = [address(0),address(0),address(0),address(0),address(0),address(0),address(0),address(0),address(0)];
+        room.name         = room_name;
+        room.player[0]    = msg.sender;
+        room.turn         = 0;
+        room.amount       = msg.value;
+        room.waiting      = true;
+        room.finish       = false;
+        room.blocked_util = block.number + 100;
+        room.movs         = 9;
         NewGame(room.name,msg.value);
     }
     
@@ -301,17 +309,48 @@ contract TicTacToe
         room.amount    = this.balance;
         room.player[1] = msg.sender;
         room.waiting   = false;
+        room.blocked_util = block.number + 100;
         PlayerJoin(msg.sender);
     }
     
+
+    function reclaim()
+        public
+        canReclaim()
+        open()
+    {
+        if (room.waiting) {
+            if (msg.sender == room.player[0]) {
+                room.player[0] = address(0);
+                room.waiting   = false;
+                room.finsh     = true;
+                msg.sender.transfer(room.amount);
+            }
+        }
+        else {
+            if (room.turn == 0)
+                if (room.player[1] == msg.sender) {
+                    room.finsh     = true;
+                    room.player[1].transfer(room.amount)
+                }
+            else 
+                if (room.player[0] == msg.sender) {
+                    room.finsh     = true;
+                    room.player[0].transfer(room.amount)
+                }
+        }
+    }
+
+
     function play(uint c) 
         public 
         open() 
         playable(c) 
         myTurn() 
     {
-        room.board[c] = msg.sender;
-        room.movs     = room.movs -1;
+        room.board[c]     = msg.sender;
+        room.movs         = room.movs -1;
+        room.blocked_util = block.number + 100;
 
         if (checkBoard(c)) {
             room.finish = true;
@@ -326,6 +365,7 @@ contract TicTacToe
                 EndGame(address(0),0);
             }
             else {
+                room.blocked_until = block.number + 100;
                 nextTurn();
             }
         }
