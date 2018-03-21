@@ -9,7 +9,7 @@ contract TicTacToe
         string name;
         address[9]     board;
         address[2]     player;
-        blocked_until  block_number;
+        uint blocked_until;
         uint movs;
         uint turn;
         uint amount;
@@ -284,7 +284,7 @@ contract TicTacToe
         room.amount       = msg.value;
         room.waiting      = true;
         room.finish       = false;
-        room.blocked_util = block.number + 100;
+        room.blocked_until = block.number + 100;
         room.movs         = 9;
         NewGame(room.name,msg.value);
     }
@@ -309,7 +309,7 @@ contract TicTacToe
         room.amount    = this.balance;
         room.player[1] = msg.sender;
         room.waiting   = false;
-        room.blocked_util = block.number + 100;
+        room.blocked_until = block.number + 100;
         PlayerJoin(msg.sender);
     }
     
@@ -323,20 +323,20 @@ contract TicTacToe
             if (msg.sender == room.player[0]) {
                 room.player[0] = address(0);
                 room.waiting   = false;
-                room.finsh     = true;
+                room.finish     = true;
                 msg.sender.transfer(room.amount);
             }
         }
         else {
             if (room.turn == 0)
                 if (room.player[1] == msg.sender) {
-                    room.finsh     = true;
-                    room.player[1].transfer(room.amount)
+                    room.finish     = true;
+                    room.player[1].transfer(room.amount);
                 }
             else 
                 if (room.player[0] == msg.sender) {
-                    room.finsh     = true;
-                    room.player[0].transfer(room.amount)
+                    room.finish     = true;
+                    room.player[0].transfer(room.amount);
                 }
         }
     }
@@ -350,7 +350,7 @@ contract TicTacToe
     {
         room.board[c]     = msg.sender;
         room.movs         = room.movs -1;
-        room.blocked_util = block.number + 100;
+        room.blocked_until = block.number + 100;
 
         if (checkBoard(c)) {
             room.finish = true;
